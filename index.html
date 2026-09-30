@@ -1,1 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
+<title>TaskQuest - To Do</title>
+
+<style>
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background: #f4f3ff;
+    color: #222;
+    min-height: 100vh;
+}
+
+.header {
+    background: linear-gradient(135deg, #6c4cff, #8f6cff);
+    color: white;
+    padding: 25px 20px;
+    border-radius: 0 0 25px 25px;
+}
+
+.header h1 {
+    font-size: 28px;
+}
+
+.header p {
+    margin-top: 8px;
+    opacity: 0.9;
+}
+
+.stats {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.stat {
+    background: rgba(255,255,255,0.18);
+    padding: 12px;
+    border-radius: 12px;
+    flex: 1;
+    text-align: center;
+}
+
+.container {
+    max-width: 600px;
+    margin: auto;
+    padding: 20px;
+}
+
+.add-box {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.add-box input {
+    flex: 1;
+    padding: 15px;
+    border: none;
+    border-radius: 12px;
+    outline: none;
+    font-size: 16px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.08);
+}
+
+.add-box button {
+    width: 55px;
+    border: none;
+    border-radius: 12px;
+    background: #6c4cff;
+    color: white;
+    font-size: 25px;
+    cursor: pointer;
+}
+
+.task {
+    background: white;
+    margin-bottom: 12px;
+    padding: 15px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 3px 10px rgba(0,0,0,0.07);
+}
+
+.task input {
+    width: 20px;
+    height: 20px;
+}
+
+.task-name {
+    flex: 1;
+    font-size: 16px;
+}
+
+.completed {
+    text-decoration: line-through;
+    opacity: 0.5;
+}
+
+.delete {
+    border: none;
+    background: #ffe5e5;
+    color: #e33;
+    padding: 8px 10px;
+    border-radius: 8px;
+    cursor: pointer;
+}
+
+.empty {
+    text-align: center;
+    margin-top: 50px;
+    color: #888;
+}
+
+.xp {
+    margin-top: 15px;
+    font-size: 14px;
+}
+
+.progress {
+    height: 8px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 10px;
+    margin-top: 8px;
+    overflow: hidden;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 0%;
+    background: white;
+    transition: 0.3s;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+
+    <h1>🎯 TaskQuest</h1>
+    <p>Complete tasks. Earn XP. Build your streak.</p>
+
+    <div class="stats">
+
+        <div class="stat">
+            <strong id="totalTasks">0</strong>
+            <br>
+            Tasks
+        </div>
+
+        <div class="stat">
+            <strong id="completedTasks">0</strong>
+            <br>
+            Done
+        </div>
+
+        <div class="stat">
+            <strong id="xp">0</strong>
+            <br>
+            XP
+        </div>
+
+    </div>
+
+    <div class="xp">
+        Level <span id="level">1</span>
+    </div>
+
+    <div class="progress">
+        <div class="progress-bar" id="progressBar"></div>
+    </div>
+
+</div>
+
+
+<div class="container">
+
+    <div class="add-box">
+
+        <input
+            id="taskInput"
+            type="text"
+            placeholder="What do you need to do?"
+        >
+
+        <button onclick="addTask()">+</button>
+
+    </div>
+
+    <div id="taskList"></div>
+
+</div>
+
+
+<script>
+
+let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+let xp = Number(localStorage.getItem("xp")) || 0;
+
+
+function saveData() {
+
+    localStorage.setItem(
+        "tasks",
+        JSON.stringify(tasks)
+    );
+
+    localStorage.setItem(
+        "xp",
+        xp
+    );
+}
+
+
+function addTask() {
+
+    const input = document.getElementById("taskInput");
+
+    const name = input.value.trim();
+
+    if (name === "") {
+        return;
+    }
+
+    tasks.push({
+        id: Date.now(),
+        name: name,
+        completed: false
+    });
+
+    input.value = "";
+
+    saveData();
+
+    renderTasks();
+}
+
+
+function completeTask(id) {
+
+    const task = tasks.find(
+        task => task.id === id
+    );
+
+    if (!task) return;
+
+    if (!task.completed) {
+
+        task.completed = true;
+
+        xp += 10;
+
+    } else {
+
+        task.completed = false;
+
+        xp = Math.max(0, xp - 10);
+    }
+
+    saveData();
+
+    renderTasks();
+}
+
+
+function deleteTask(id) {
+
+    tasks = tasks.filter(
+        task => task.id !== id
+    );
+
+    saveData();
+
+    renderTasks();
+}
+
+
+function renderTasks() {
+
+    const list =
+        document.getElementById("taskList");
+
+    list.innerHTML = "";
+
+    if (tasks.length === 0) {
+
+        list.innerHTML = `
+            <div class="empty">
+                <h2>🎯 No tasks yet</h2>
+                <p>Add your first task!</p>
+            </div>
+        `;
+
+    } else {
+
+        tasks.forEach(task => {
+
+            const div =
+                document.createElement("div");
+
+            div.className = "task";
+
+            div.innerHTML = `
+
+                <input
+                    type="checkbox"
+                    ${task.completed ? "checked" : ""}
+                    onchange="completeTask(${task.id})"
+                >
+
+                <span class="task-name
+                    ${task.completed ? "completed" : ""}">
+                    ${escapeHTML(task.name)}
+                </span>
+
+                <button
+                    class="delete"
+                    onclick="deleteTask(${task.id})">
+                    🗑️
+                </button>
+
+            `;
+
+            list.appendChild(div);
+
+        });
+    }
+
+    updateStats();
+}
+
+
+function updateStats() {
+
+    const total = tasks.length;
+
+    const completed =
+        tasks.filter(
+            task => task.completed
+        ).length;
+
+    document.getElementById(
+        "totalTasks"
+    ).textContent = total;
+
+    document.getElementById(
+        "completedTasks"
+    ).textContent = completed;
+
+    document.getElementById(
+        "xp"
+    ).textContent = xp;
+
+    const level =
+        Math.floor(xp / 100) + 1;
+
+    document.getElementById(
+        "level"
+    ).textContent = level;
+
+    const progress =
+        xp % 100;
+
+    document.getElementById(
+        "progressBar"
+    ).style.width = progress + "%";
+}
+
+
+function escapeHTML(text) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent = text;
+
+    return div.innerHTML;
+}
+
+
+document
+    .getElementById("taskInput")
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if (event.key === "Enter") {
+                addTask();
+            }
+
+        }
+    );
+
+
+renderTasks();
+
+</script>
+
+</body>
+                </html>
